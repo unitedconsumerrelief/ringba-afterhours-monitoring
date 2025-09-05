@@ -15,4 +15,4 @@ SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL", "https://hooks.slack.com/serv
 FLASK_ENV = os.getenv("FLASK_ENV", "production")
 FLASK_DEBUG = os.getenv("FLASK_DEBUG", "False").lower() == "true"
 HOST = os.getenv("HOST", "0.0.0.0")  # Allow external connections
-PORT = int(os.getenv("PORT", 5000))
+PORT = int(os.getenv("PORT", 5000))  # Use PORT env var for Render compatibility
