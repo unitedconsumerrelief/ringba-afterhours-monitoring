@@ -41,35 +41,13 @@ def has_valid_target(target_name):
     
     return True
 
-def is_within_monitoring_hours(timestamp=None):
-    """Check if current time or provided timestamp is within 6pm EST - 9am EST"""
+def is_within_monitoring_hours():
+    """Check if current time is within 6pm EST - 9am EST"""
     try:
-        # Get Eastern timezone
+        # Always use current Eastern time for consistency
         eastern_tz = pytz.timezone(TIMEZONE)
-        
-        if timestamp:
-            # Parse the timestamp if it's a string
-            if isinstance(timestamp, str):
-                # Try different timestamp formats
-                for fmt in ["%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%SZ"]:
-                    try:
-                        dt = datetime.datetime.strptime(timestamp, fmt)
-                        break
-                    except ValueError:
-                        continue
-                else:
-                    # If no format matches, use current time
-                    dt = datetime.datetime.now()
-            else:
-                dt = timestamp
-        else:
-            dt = datetime.datetime.now()
-        
-        # Convert to Eastern time
-        if dt.tzinfo is None:
-            dt = eastern_tz.localize(dt)
-        else:
-            dt = dt.astimezone(eastern_tz)
+        now_utc = datetime.datetime.now(datetime.UTC)
+        dt = now_utc.astimezone(eastern_tz)
         
         # Get current hour in Eastern time
         current_hour = dt.hour
@@ -91,8 +69,8 @@ def passes_filter(target_name, timestamp=None):
     2. Check if target name is valid (not blank/empty/No value)
     3. Monitor ALL calls (no campaign filtering needed)
     """
-    # Check if within monitoring hours
-    if not is_within_monitoring_hours(timestamp):
+    # Check if within monitoring hours (always use current time)
+    if not is_within_monitoring_hours():
         logging.info(f"Call outside monitoring hours (6pm EST - 9am EST)")
         return False
     
@@ -183,9 +161,7 @@ def ringba_webhook():
         logging.info(f"Parsed data: targetName='{target_name}', callerId='{caller_id}', timestamp='{timestamp}'")
         
         # Check if this call matches our filter
-        # Allow test mode to bypass time check
-        test_mode = data.get("test_mode", False)
-        if not passes_filter(target_name, timestamp) and not test_mode:
+        if not passes_filter(target_name, timestamp):
             logging.info(f"Call filtered out: targetName='{target_name}', timestamp='{timestamp}'")
             return jsonify({"status": "filtered", "message": "Call does not match filter criteria"}), 200
         
