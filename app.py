@@ -183,7 +183,9 @@ def ringba_webhook():
         logging.info(f"Parsed data: targetName='{target_name}', callerId='{caller_id}', timestamp='{timestamp}'")
         
         # Check if this call matches our filter
-        if not passes_filter(target_name, timestamp):
+        # Allow test mode to bypass time check
+        test_mode = data.get("test_mode", False)
+        if not passes_filter(target_name, timestamp) and not test_mode:
             logging.info(f"Call filtered out: targetName='{target_name}', timestamp='{timestamp}'")
             return jsonify({"status": "filtered", "message": "Call does not match filter criteria"}), 200
         
