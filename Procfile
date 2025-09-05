@@ -1,0 +1,4 @@
+web: gunicorn main:app
+
+
+
