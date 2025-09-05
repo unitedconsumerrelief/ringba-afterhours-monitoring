@@ -55,13 +55,17 @@ def is_within_monitoring_hours(timestamp=None):
                     except ValueError:
                         continue
                 else:
-                    # If no format matches, use current time
-                    dt = datetime.datetime.now()
+                    # If no format matches, use current EST time
+                    eastern_tz = pytz.timezone(TIMEZONE)
+                    now_utc = datetime.datetime.now(datetime.UTC)
+                    dt = now_utc.astimezone(eastern_tz)
             else:
                 dt = timestamp
         else:
-            # No timestamp provided, use current time
-            dt = datetime.datetime.now()
+            # No timestamp provided, use current EST time
+            eastern_tz = pytz.timezone(TIMEZONE)
+            now_utc = datetime.datetime.now(datetime.UTC)
+            dt = now_utc.astimezone(eastern_tz)
         
         # Get hour from the timestamp (already in EST)
         current_hour = dt.hour
