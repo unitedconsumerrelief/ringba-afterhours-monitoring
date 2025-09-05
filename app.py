@@ -41,15 +41,29 @@ def has_valid_target(target_name):
     
     return True
 
-def is_within_monitoring_hours():
-    """Check if current time is within 6pm EST - 9am EST"""
+def is_within_monitoring_hours(timestamp=None):
+    """Check if Ringba's timestamp is within 6pm EST - 9am EST"""
     try:
-        # Always use current Eastern time for consistency
-        eastern_tz = pytz.timezone(TIMEZONE)
-        now_utc = datetime.datetime.now(datetime.UTC)
-        dt = now_utc.astimezone(eastern_tz)
+        if timestamp:
+            # Parse Ringba's timestamp (already in EST)
+            if isinstance(timestamp, str):
+                # Try different timestamp formats
+                for fmt in ["%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%SZ"]:
+                    try:
+                        dt = datetime.datetime.strptime(timestamp, fmt)
+                        break
+                    except ValueError:
+                        continue
+                else:
+                    # If no format matches, use current time
+                    dt = datetime.datetime.now()
+            else:
+                dt = timestamp
+        else:
+            # No timestamp provided, use current time
+            dt = datetime.datetime.now()
         
-        # Get current hour in Eastern time
+        # Get hour from the timestamp (already in EST)
         current_hour = dt.hour
         
         # Check if within monitoring hours (6pm to 9am next day)
@@ -65,13 +79,13 @@ def is_within_monitoring_hours():
 
 def passes_filter(target_name, timestamp=None):
     """New filter logic:
-    1. Check if within time range (6pm EST - 9am EST)
+    1. Check if within time range (6pm EST - 9am EST) using Ringba's timestamp
     2. Check if target name is valid (not blank/empty/No value)
     3. Monitor ALL calls (no campaign filtering needed)
     """
-    # Check if within monitoring hours (always use current time)
-    if not is_within_monitoring_hours():
-        logging.info(f"Call outside monitoring hours (6pm EST - 9am EST)")
+    # Check if within monitoring hours using Ringba's timestamp
+    if not is_within_monitoring_hours(timestamp):
+        logging.info(f"Call outside monitoring hours (6pm EST - 9am EST) - Ringba timestamp: {timestamp}")
         return False
     
     # Check if target name is valid
@@ -165,11 +179,11 @@ def ringba_webhook():
             logging.info(f"Call filtered out: targetName='{target_name}', timestamp='{timestamp}'")
             return jsonify({"status": "filtered", "message": "Call does not match filter criteria"}), 200
         
-        # Process the call - use Ringba's timestamp if available, otherwise use current time
+        # Process the call - use Ringba's timestamp (already in EST)
         if timestamp:
             time_of_call = timestamp
         else:
-            # Convert UTC server time to Eastern time (handles DST automatically)
+            # No timestamp provided, use current time
             utc_time = datetime.datetime.now(datetime.UTC)
             eastern_tz = pytz.timezone(TIMEZONE)
             eastern_time = utc_time.astimezone(eastern_tz)
